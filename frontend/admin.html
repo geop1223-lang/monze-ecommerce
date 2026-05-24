@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+</head>
+<body>
+
+<h1>Admin Dashboard</h1>
+
+<h2>📊 Analytics</h2>
+<div id="stats"></div>
+<button onclick="loadStats()">Refresh</button>
+
+<hr>
+
+<h2>Add Product</h2>
+
+<input id="name" placeholder="Name">
+<input id="price" placeholder="Price">
+<button onclick="addProduct()">Add</button>
+
+<hr>
+
+<h2>Products</h2>
+<div id="products"></div>
+
+<hr>
+
+<h2>Orders</h2>
+<div id="orders"></div>
+
+<script>
+
+const API = "http://localhost:3000";
+
+const role = localStorage.getItem("role");
+const token = localStorage.getItem("token");
+
+if(role !== "admin"){
+alert("Access denied");
+window.location.href = "index.html";
+}
+
+/* ================= ANALYTICS ================= */
+
+async function loadStats(){
+
+const res = await fetch(API + "/admin/analytics", {
+headers:{ Authorization: token }
+});
+
+const d = await res.json();
+
+document.getElementById("stats").innerHTML = `
+<p>Users: ${d.users}</p>
+<p>Products: ${d.products}</p>
+<p>Orders: ${d.orders}</p>
+<p>Pending: ${d.pending}</p>
+<p>Delivered: ${d.delivered}</p>
+<p>Revenue: K${d.revenue}</p>
+`;
+
+}
+
+loadStats();
+
+/* ================= PRODUCTS ================= */
+
+async function addProduct(){
+
+await fetch(API + "/products", {
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization: token
+},
+body: JSON.stringify({
+name:document.getElementById("name").value,
+price:document.getElementById("price").value
+})
+});
+
+loadProducts();
+}
+
+async function loadProducts(){
+
+const res = await fetch(API + "/products");
+const data = await res.json();
+
+let box = document.getElementById("products");
+box.innerHTML = "";
+
+data.forEach(p=>{
+box.innerHTML += `
+<div>
+${p.name} - K${p.price}
+<button onclick="deleteP('${p._id}')">Delete</button>
+</div>
+`;
+});
+}
+
+async function deleteP(id){
+
+await fetch(API + "/products/"+id,{
+method:"DELETE",
+headers:{Authorization:token}
+});
+
+loadProducts();
+}
+
+/* ================= ORDERS ================= */
+
+async function loadOrders(){
+
+const res = await fetch(API + "/admin/orders", {
+headers:{Authorization:token}
+});
+
+const data = await res.json();
+
+let box = document.getElementById("orders");
+box.innerHTML = "";
+
+data.forEach(o=>{
+box.innerHTML += `
+<div>
+<p>User: ${o.username}</p>
+<p>Status: ${o.status}</p>
+<p>Items: ${o.items.length}</p>
+</div>
+`;
+});
+}
+
+loadProducts();
+loadOrders();
+
+</script>
+
+</body>
+</html>

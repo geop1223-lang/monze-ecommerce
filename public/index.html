@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Monze Ecommerce</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+transition:0.3s;
+}
+
+body{
+background:#f4f4f4;
+color:black;
+}
+
+body.dark{
+background:#121212;
+color:white;
+}
+
+header{
+background:black;
+color:white;
+padding:20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+body.dark header{
+background:#1f1f1f;
+}
+
+.container{
+width:90%;
+margin:auto;
+padding:20px 0;
+}
+
+.auth-box,
+.admin-panel,
+.cart,
+.wishlist-section,
+.orders-section,
+.product,
+.modal-content{
+background:white;
+padding:20px;
+border-radius:10px;
+}
+
+body.dark .auth-box,
+body.dark .admin-panel,
+body.dark .cart,
+body.dark .wishlist-section,
+body.dark .orders-section,
+body.dark .product,
+body.dark .modal-content{
+background:#1e1e1e;
+color:white;
+}
+
+input,
+select,
+textarea{
+width:100%;
+padding:12px;
+margin:10px 0;
+border-radius:5px;
+border:1px solid #ccc;
+}
+
+body.dark input,
+body.dark select,
+body.dark textarea{
+background:#2a2a2a;
+color:white;
+border:none;
+}
+
+button{
+padding:10px 15px;
+border:none;
+cursor:pointer;
+border-radius:5px;
+background:black;
+color:white;
+}
+
+.logout-btn{background:red;}
+.checkout-btn{background:green;}
+.delete-btn{background:red;}
+.wishlist-btn{background:hotpink;}
+.review-btn{background:orange;}
+
+.products{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+}
+
+.product img{
+width:100%;
+height:200px;
+object-fit:cover;
+border-radius:10px;
+}
+
+.cart-item,
+.wishlist-item,
+.order-item{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+display:none;
+justify-content:center;
+align-items:center;
+}
+
+.modal-content{
+width:90%;
+max-width:500px;
+max-height:90vh;
+overflow:auto;
+}
+
+.rating{color:orange;}
+
+</style>
+</head>
+
+<body>
+
+<div id="app"></div>
+
+<div class="modal" id="productModal">
+<div class="modal-content">
+<span onclick="closeModal()" style="float:right;font-size:25px;cursor:pointer;">×</span>
+<div id="modalBody"></div>
+</div>
+</div>
+
+<script>
+
+const app = document.getElementById("app");
+
+/* PRODUCTS */
+let allProducts =
+JSON.parse(localStorage.getItem("products")) || [
+{
+id:1,
+name:"Nike Shoes",
+price:500,
+category:"Shoes",
+image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff",
+description:"Nice shoes"
+},
+{
+id:2,
+name:"Headphones",
+price:300,
+category:"Electronics",
+image:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+description:"Good sound"
+}
+];
+
+saveProducts();
+
+function saveProducts(){
+localStorage.setItem("products", JSON.stringify(allProducts));
+}
+
+/* HOME */
+function showHomePage(){
+
+app.innerHTML = `
+<header><h1>Monze Ecommerce</h1></header>
+
+<div class="container">
+
+<div class="auth-box">
+<h2>Register</h2>
+<input id="regUsername" placeholder="username">
+<input id="regPassword" type="password" placeholder="password">
+<button onclick="register()">Register</button>
+</div>
+
+<div class="auth-box">
+<h2>Login</h2>
+<input id="loginUsername" placeholder="username">
+<input id="loginPassword" type="password" placeholder="password">
+<button onclick="login()">Login</button>
+</div>
+
+</div>`;
+}
+
+/* REGISTER */
+function register(){
+
+const username = document.getElementById("regUsername").value;
+const password = document.getElementById("regPassword").value;
+
+let users = JSON.parse(localStorage.getItem("users")) || [];
+
+if(users.find(u => u.username === username)){
+alert("User already exists");
+return;
+}
+
+users.push({username,password});
+
+localStorage.setItem("users",JSON.stringify(users));
+
+alert("Registered successfully 🎉");
+}
+
+/* LOGIN (FIXED WITH PASSWORD) */
+function login(){
+
+const username = document.getElementById("loginUsername").value;
+const password = document.getElementById("loginPassword").value;
+
+let users = JSON.parse(localStorage.getItem("users")) || [];
+
+const user = users.find(u =>
+u.username === username && u.password === password
+);
+
+if(!user){
+alert("Invalid username or password");
+return;
+}
+
+localStorage.setItem("user",username);
+showDashboard(username);
+}
+
+/* DASHBOARD */
+function showDashboard(user){
+
+app.innerHTML = `
+<header>
+
+<h2>Welcome ${user}</h2>
+
+<div>
+
+<button onclick="toggleTheme()">🌙</button>
+
+🛒 <span id="cartCount">0</span>
+❤️ <span id="wishCount">0</span>
+
+<button class="logout-btn" onclick="logout()">Logout</button>
+
+</div>
+
+</header>
+
+<div class="container">
+
+<div class="admin-panel">
+
+<h3>Add Product</h3>
+
+<input id="name" placeholder="name">
+<input id="price" type="number" placeholder="price">
+<input id="category" placeholder="category">
+<input id="image" type="file" accept="image/*">
+<textarea id="desc"></textarea>
+
+<button onclick="addProduct()">Add</button>
+
+</div>
+
+<div class="products" id="products"></div>
+
+<div class="cart">
+<h3>Cart</h3>
+<div id="cart"></div>
+</div>
+
+<div class="wishlist-section">
+<h3>Wishlist</h3>
+<div id="wishlist"></div>
+</div>
+
+<div class="orders-section">
+<h3>Orders</h3>
+<div id="orders"></div>
+</div>
+
+</div>
+`;
+
+displayProducts();
+displayCart();
+displayWishlist();
+displayOrders();
+}
+
+/* ADD PRODUCT */
+function addProduct(){
+
+const file = document.getElementById("image").files[0];
+if(!file) return alert("select image");
+
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+const product = {
+id:Date.now(),
+name:document.getElementById("name").value,
+price:Number(document.getElementById("price").value),
+category:document.getElementById("category").value,
+image:e.target.result,
+description:document.getElementById("desc").value
+};
+
+allProducts.push(product);
+saveProducts();
+displayProducts();
+};
+
+reader.readAsDataURL(file);
+}
+
+/* PRODUCTS */
+function displayProducts(){
+
+let html="";
+
+allProducts.forEach(p=>{
+
+html += `
+<div class="product">
+
+<img src="${p.image}" onclick="openModal(${p.id})">
+
+<h3>${p.name}</h3>
+<p>${p.category}</p>
+<p>K${p.price}</p>
+
+<button onclick="addToCart('${p.name}',${p.price})">Cart</button>
+<button onclick="addToWishlist(${p.id})">❤️</button>
+<button onclick="deleteProduct(${p.id})">Delete</button>
+
+</div>`;
+});
+
+document.getElementById("products").innerHTML = html;
+}
+
+/* CART */
+function addToCart(name,price){
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+let item = cart.find(i=>i.name===name);
+
+if(item){
+item.qty++;
+}else{
+cart.push({name,price,qty:1});
+}
+
+localStorage.setItem("cart",JSON.stringify(cart));
+displayCart();
+}
+
+function displayCart(){
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let html="";
+let total=0;
+
+document.getElementById("cartCount").innerText = cart.length;
+
+cart.forEach((c,i)=>{
+
+let sum = c.price*c.qty;
+total += sum;
+
+html += `
+<div class="cart-item">
+
+<div>
+${c.name}<br>
+K${c.price} x ${c.qty} = K${sum}
+</div>
+
+<div>
+<button onclick="minus(${i})">-</button>
+<button onclick="plus(${i})">+</button>
+<button onclick="remove(${i})">X</button>
+</div>
+
+</div>`;
+});
+
+html += `<h3>Total: K${total}</h3>
+<button class="checkout-btn" onclick="checkout()">Checkout</button>`;
+
+document.getElementById("cart").innerHTML = html;
+}
+
+function plus(i){
+let cart = JSON.parse(localStorage.getItem("cart"));
+cart[i].qty++;
+localStorage.setItem("cart",JSON.stringify(cart));
+displayCart();
+}
+
+function minus(i){
+let cart = JSON.parse(localStorage.getItem("cart"));
+if(cart[i].qty>1) cart[i].qty--;
+else cart.splice(i,1);
+localStorage.setItem("cart",JSON.stringify(cart));
+displayCart();
+}
+
+function remove(i){
+let cart = JSON.parse(localStorage.getItem("cart"));
+cart.splice(i,1);
+localStorage.setItem("cart",JSON.stringify(cart));
+displayCart();
+}
+
+/* CHECKOUT */
+function checkout(){
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+if(cart.length===0) return alert("empty");
+
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+orders.push({
+id:Date.now(),
+items:cart,
+date:new Date().toLocaleString()
+});
+
+localStorage.setItem("orders",JSON.stringify(orders));
+
+localStorage.removeItem("cart");
+
+displayCart();
+displayOrders();
+
+alert("Order placed");
+}
+
+/* ORDERS */
+function displayOrders(){
+
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
+let html="";
+
+orders.forEach(o=>{
+html += `<div class="order-item">
+Order ${o.id} - ${o.items.length} items - ${o.date}
+</div>`;
+});
+
+document.getElementById("orders").innerHTML = html;
+}
+
+/* WISHLIST */
+function addToWishlist(id){
+
+let list = JSON.parse(localStorage.getItem("wishlist")) || [];
+let p = allProducts.find(x=>x.id===id);
+
+list.push(p);
+
+localStorage.setItem("wishlist",JSON.stringify(list));
+displayWishlist();
+}
+
+function displayWishlist(){
+
+let list = JSON.parse(localStorage.getItem("wishlist")) || [];
+
+document.getElementById("wishCount").innerText = list.length;
+
+let html="";
+
+list.forEach(w=>{
+html += `<div class="wishlist-item">${w.name}</div>`;
+});
+
+document.getElementById("wishlist").innerHTML = html;
+}
+
+/* DELETE */
+function deleteProduct(id){
+allProducts = allProducts.filter(p=>p.id!==id);
+saveProducts();
+displayProducts();
+}
+
+/* MODAL */
+function openModal(id){
+
+let p = allProducts.find(x=>x.id===id);
+
+document.getElementById("modalBody").innerHTML=`
+<img src="${p.image}">
+<h2>${p.name}</h2>
+<p>${p.description}</p>
+`;
+
+document.getElementById("productModal").style.display="flex";
+}
+
+function closeModal(){
+document.getElementById("productModal").style.display="none";
+}
+
+/* THEME */
+function toggleTheme(){
+document.body.classList.toggle("dark");
+}
+
+/* LOGOUT */
+function logout(){
+localStorage.removeItem("user");
+location.reload();
+}
+
+/* START */
+const user = localStorage.getItem("user");
+if(user) showDashboard(user);
+else showHomePage();
+
+</script>
+
+</body>
+</html>

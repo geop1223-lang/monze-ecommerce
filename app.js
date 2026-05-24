@@ -12,14 +12,10 @@ const app = express();
 /* ================= MIDDLEWARE ================= */
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
 /* ================= MONGODB CONNECTION ================= */
-/*
-IMPORTANT:
-Replace YOUR_PASSWORD_HERE with your MongoDB Atlas password
-*/
-
-const DB_PASSWORD = "YOUR_PASSWORD_HERE";
+const DB_PASSWORD = "YOUR_PASSWORD_HERE"; // 🔴 CHANGE THIS
 
 const DB_URL =
 `mongodb+srv://geop1223_db_user:${DB_PASSWORD}@cluster0.eapg09a.mongodb.net/monze-ecommerce?retryWrites=true&w=majority`;
@@ -76,8 +72,6 @@ app.post("/login", async (req, res) => {
 });
 
 /* ================= PRODUCTS ================= */
-
-// ADD PRODUCT
 app.post("/add-product", async (req, res) => {
     try {
         const product = new Product(req.body);
@@ -89,7 +83,6 @@ app.post("/add-product", async (req, res) => {
     }
 });
 
-// GET PRODUCTS
 app.get("/products", async (req, res) => {
     try {
         const products = await Product.find();
@@ -101,8 +94,6 @@ app.get("/products", async (req, res) => {
 });
 
 /* ================= CART ================= */
-
-// ADD TO CART
 app.post("/cart/add", async (req, res) => {
     try {
         const cart = new Cart(req.body);
@@ -114,7 +105,6 @@ app.post("/cart/add", async (req, res) => {
     }
 });
 
-// GET CART
 app.get("/cart/:username", async (req, res) => {
     try {
         const cart = await Cart.find({
@@ -128,8 +118,7 @@ app.get("/cart/:username", async (req, res) => {
     }
 });
 
-/* ================= SERVER (FIXED FOR DEPLOYMENT) ================= */
-
+/* ================= SERVER ================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
